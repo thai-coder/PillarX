@@ -3,41 +3,46 @@ import { X } from 'lucide-react';
 
 interface NewProjectProps {
   onClose: () => void;
+  onCreate: (name: string, componentType: string) => void;
+  defaultName: string;
 }
 
-const NewProject: React.FC<NewProjectProps> = ({ onClose }) => {
-  const [projectName, setProjectName] = useState('Project 2');
+const NewProject: React.FC<NewProjectProps> = ({ onClose, onCreate, defaultName }) => {
+  const [projectName, setProjectName] = useState(defaultName);
 
   const SectionTile = ({ label, icon }: { label: string; icon: React.ReactNode }) => (
-    <div className="flex flex-col items-center gap-3 cursor-pointer group">
+    <div 
+      className="flex flex-col items-center gap-3 cursor-pointer group"
+      onClick={() => onCreate(projectName, label)}
+    >
       <div className="w-24 h-24 border border-gray-400 rounded-lg flex items-center justify-center bg-white group-hover:border-blue-600 group-hover:shadow-md transition-all">
         {icon}
       </div>
-      <span className="text-sm text-gray-900 font-medium">{label}</span>
+      <span className="text-sm text-gray-900 font-medium text-center">{label}</span>
     </div>
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-8 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 md:p-8 backdrop-blur-sm">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative mx-auto">
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"
+          className="absolute top-4 right-4 md:top-6 md:right-6 text-gray-400 hover:text-gray-600"
         >
           <X className="w-6 h-6" />
         </button>
 
-        <div className="p-10">
-          <h1 className="text-2xl font-bold text-gray-900 mb-10">New Project</h1>
+        <div className="p-6 md:p-10">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-8 md:mb-10">New Project</h1>
 
           {/* Project Name Input */}
-          <div className="flex items-center gap-4 mb-12">
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-8 md:mb-12">
             <label className="text-sm font-bold text-gray-900 min-w-[100px]">Project Name:</label>
             <input
               type="text"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              className="bg-white border border-gray-800 rounded-sm px-3 py-1.5 w-64 text-sm text-gray-900 focus:outline-none focus:border-blue-600"
+              className="bg-white border border-gray-800 rounded-sm px-3 py-1.5 w-full md:w-64 text-sm text-gray-900 focus:outline-none focus:border-blue-600"
             />
           </div>
 
@@ -47,13 +52,13 @@ const NewProject: React.FC<NewProjectProps> = ({ onClose }) => {
 
           <div className="space-y-12">
             {/* Building Structure Elements */}
-            <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-8">
               <div className="w-40 flex-shrink-0 pt-2">
                 <h3 className="text-sm font-bold text-gray-500 leading-tight">
                   Building<br />Structure<br />Elements
                 </h3>
               </div>
-              <div className="flex flex-wrap gap-8">
+              <div className="flex flex-wrap gap-6 md:gap-8">
                 <SectionTile 
                   label="Beam" 
                   icon={
@@ -106,13 +111,13 @@ const NewProject: React.FC<NewProjectProps> = ({ onClose }) => {
             </div>
 
             {/* Foundation Elements */}
-            <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-8">
               <div className="w-40 flex-shrink-0 pt-2">
                 <h3 className="text-sm font-bold text-gray-500 leading-tight">
                   Foundation<br />Elements
                 </h3>
               </div>
-              <div className="flex flex-wrap gap-8">
+              <div className="flex flex-wrap gap-6 md:gap-8">
                 <SectionTile 
                   label="Retaining Wall" 
                   icon={
@@ -158,13 +163,13 @@ const NewProject: React.FC<NewProjectProps> = ({ onClose }) => {
             </div>
 
             {/* Load Generators */}
-            <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-8">
               <div className="w-40 flex-shrink-0 pt-2">
                 <h3 className="text-sm font-bold text-gray-500 leading-tight">
                   Load<br />Generators
                 </h3>
               </div>
-              <div className="flex flex-wrap gap-8">
+              <div className="flex flex-wrap gap-6 md:gap-8">
                 <SectionTile 
                   label="Seismic Load" 
                   icon={

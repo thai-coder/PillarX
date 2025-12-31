@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { AlignJustify, Home, Folder, ChevronDown, Search } from 'lucide-react';
+import { AlignJustify, Home, Folder, ChevronDown, Search, Menu } from 'lucide-react';
 import { Project, ViewType } from '../types';
 
 interface ProjectTableProps {
   projects: Project[];
+  onMenuClick: () => void;
+  onProjectClick: (project: Project) => void;
 }
 
-const ProjectTable: React.FC<ProjectTableProps> = ({ projects }) => {
+const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onProjectClick }) => {
   const [activeView, setActiveView] = useState<ViewType>('recents');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -19,8 +21,17 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects }) => {
   });
 
   return (
-    <div className="flex-1 p-8 md:p-12 ml-64 min-h-screen bg-white">
-      <h2 className="text-3xl font-bold text-gray-900 mb-8">Projects</h2>
+    <div className="flex-1 p-6 md:p-12 md:ml-64 min-h-screen bg-white transition-all duration-300">
+      <div className="flex items-center gap-4 mb-8">
+        <button 
+          onClick={onMenuClick}
+          className="md:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label="Open Menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <h2 className="text-3xl font-bold text-gray-900">Projects</h2>
+      </div>
 
       {/* Search Bar */}
       <div className="relative mb-8 max-w-sm">
@@ -40,11 +51,11 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects }) => {
       <div className="border border-gray-800 rounded-lg flex flex-col md:flex-row min-h-[500px] overflow-hidden">
         
         {/* Card Sidebar */}
-        <div className="w-full md:w-64 bg-gray-100/50 border-r border-gray-300 flex-shrink-0">
-          <div className="py-2">
+        <div className="w-full md:w-64 bg-gray-100/50 border-b md:border-b-0 md:border-r border-gray-300 flex-shrink-0">
+          <div className="flex md:block overflow-x-auto md:overflow-visible py-2">
             <button
               onClick={() => setActiveView('recents')}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 md:w-full flex items-center justify-center md:justify-start gap-3 px-4 md:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeView === 'recents' ? 'bg-gray-200/80 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -53,7 +64,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects }) => {
             </button>
             <button
               onClick={() => setActiveView('all')}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 md:w-full flex items-center justify-center md:justify-start gap-3 px-4 md:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeView === 'all' ? 'bg-gray-200/80 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -62,7 +73,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects }) => {
             </button>
             <button
               onClick={() => setActiveView('my_projects')}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${
+              className={`flex-1 md:w-full flex items-center justify-center md:justify-start gap-3 px-4 md:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeView === 'my_projects' ? 'bg-gray-200/80 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -78,13 +89,13 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects }) => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-white">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider w-1/2">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider w-1/2 min-w-[150px]">
                     Project Name
                   </th>
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 tracking-wider">
                     Components
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
                     Date Modified
                   </th>
                 </tr>
@@ -92,7 +103,11 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects }) => {
               <tbody className="bg-white divide-y divide-gray-100">
                 {filteredProjects.length > 0 ? (
                   filteredProjects.map((project) => (
-                    <tr key={project.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
+                    <tr 
+                      key={project.id} 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => onProjectClick(project)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {project.name}
                       </td>
