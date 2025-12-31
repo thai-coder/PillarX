@@ -1,0 +1,5 @@
+{
+  "name": "RISACalc Replica",
+  "description": "A responsive dashboard UI replicating the RISACalc interface with project management features.",
+  "requestFramePermissions": []
+}
