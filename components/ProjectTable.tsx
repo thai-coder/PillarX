@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AlignJustify, Home, Folder, ChevronDown, ChevronUp, Search, Menu, Trash2, ArrowUpDown } from 'lucide-react';
+import { AlignJustify, Home, Folder, ChevronDown, ChevronUp, Search, Menu, Trash2, ArrowUpDown, X, Check } from 'lucide-react';
 import { Project, ViewType } from '../types';
 
 interface ProjectTableProps {
@@ -17,6 +17,7 @@ type SortConfig = {
 const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onProjectClick, onDeleteProject }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'dateModified', direction: 'desc' });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, x: number, y: number } | null>(null);
 
   const handleSort = (key: keyof Project) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -38,7 +39,6 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
 
         if (aValue === undefined || bValue === undefined) return 0;
 
-        // Date comparison special case
         if (sortConfig.key === 'dateModified') {
           return sortConfig.direction === 'asc' 
             ? new Date(aValue as string).getTime() - new Date(bValue as string).getTime()
@@ -61,16 +61,31 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
       : <ChevronDown className="w-3 h-3 ml-1 text-blue-600" />;
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, projectId: string) => {
+  const handleDeleteTrigger = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
-    // User requested: "before delete should show answer want to delete (yes or no) Yes go to delete"
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      onDeleteProject(projectId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDeleteConfirm({ 
+      id: projectId, 
+      x: rect.left - 120, 
+      y: rect.top - 10 
+    });
+  };
+
+  const confirmDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (deleteConfirm) {
+      onDeleteProject(deleteConfirm.id);
+      setDeleteConfirm(null);
     }
   };
 
+  const cancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteConfirm(null);
+  };
+
   return (
-    <div className="flex-1 p-6 md:p-12 md:ml-64 min-h-screen bg-white transition-all duration-300">
+    <div className="flex-1 p-6 md:p-12 md:ml-64 min-h-screen bg-white transition-all duration-300 relative">
       <div className="flex items-center gap-4 mb-8">
         <button 
           onClick={onMenuClick}
@@ -82,7 +97,6 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
         <h2 className="text-3xl font-bold text-gray-900">Projects</h2>
       </div>
 
-      {/* Search Bar */}
       <div className="relative mb-8 max-w-sm">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-gray-500" />
@@ -96,10 +110,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
         />
       </div>
 
-      {/* Main Content Card */}
       <div className="border border-gray-300 rounded-lg flex flex-col overflow-hidden shadow-sm">
-        
-        {/* Card Content (Table) */}
         <div className="flex-1 bg-white">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -118,11 +129,11 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
                   <th 
                     scope="col" 
                     className="px-6 py-4 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => handleSort('components')}
+                    onClick={() => handleSort('componentsCount')}
                   >
                     <div className="flex items-center justify-center">
                       Components
-                      <SortIcon columnKey="components" />
+                      <SortIcon columnKey="componentsCount" />
                     </div>
                   </th>
                   <th 
@@ -157,7 +168,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
                         className="px-6 py-5 whitespace-nowrap text-sm text-gray-600 text-center"
                         onClick={() => onProjectClick(project)}
                       >
-                        {project.components}
+                        {project.componentsCount}
                       </td>
                       <td 
                         className="px-6 py-5 whitespace-nowrap text-sm text-gray-600 text-right"
@@ -167,7 +178,7 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap text-center text-sm">
                         <button 
-                          onClick={(e) => handleDeleteClick(e, project.id)}
+                          onClick={(e) => handleDeleteTrigger(e, project.id)}
                           className="text-gray-300 hover:text-red-600 transition-colors p-2"
                           title="Delete Project"
                         >
@@ -188,6 +199,31 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
           </div>
         </div>
       </div>
+
+      {/* Localized Delete Confirmation */}
+      {deleteConfirm && (
+        <div 
+          className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-lg p-3 flex flex-col gap-2 w-48 animate-in fade-in zoom-in duration-200"
+          style={{ top: deleteConfirm.y, left: deleteConfirm.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="text-xs font-bold text-gray-800">Delete Project?</span>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={confirmDelete}
+              className="flex-1 py-1 px-2 bg-red-600 text-white text-[10px] font-bold rounded hover:bg-red-700 flex items-center justify-center gap-1"
+            >
+              <Check className="w-3 h-3" /> YES
+            </button>
+            <button 
+              onClick={cancelDelete}
+              className="flex-1 py-1 px-2 bg-gray-100 text-gray-800 text-[10px] font-bold rounded hover:bg-gray-200 flex items-center justify-center gap-1"
+            >
+              <X className="w-3 h-3" /> NO
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

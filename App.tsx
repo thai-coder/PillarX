@@ -6,7 +6,7 @@ import ProjectDetail from './components/ProjectDetail';
 import ActivityLog from './components/ActivityLog';
 import Auth from './components/Auth';
 import { MOCK_PROJECTS } from './constants';
-import { Project, User, UserActivity, ViewType } from './types';
+import { Project, User, UserActivity, ViewType, ProjectComponent } from './types';
 import { detectActor } from './utils/detector';
 
 function App() {
@@ -21,28 +21,48 @@ function App() {
 
   const { actorType } = detectActor();
 
-  // Load Auth and Data
+  // Unified Initialization Logic (Auto-Login)
   useEffect(() => {
-    const savedUser = localStorage.getItem('pillarx_current_user');
-    if (savedUser) setCurrentUser(JSON.parse(savedUser));
+    const initApp = async () => {
+      try {
+        // Restore Session
+        const savedUser = localStorage.getItem('pillarx_current_user');
+        if (savedUser) {
+          setCurrentUser(JSON.parse(savedUser));
+        }
 
-    const savedProjects = localStorage.getItem('pillarx_projects');
-    if (savedProjects) setProjects(JSON.parse(savedProjects));
+        // Restore Data
+        const savedProjects = localStorage.getItem('pillarx_projects');
+        if (savedProjects) {
+          setProjects(JSON.parse(savedProjects));
+        }
 
-    const savedActivities = localStorage.getItem('pillarx_activities');
-    if (savedActivities) setActivities(JSON.parse(savedActivities));
+        const savedActivities = localStorage.getItem('pillarx_activities');
+        if (savedActivities) {
+          setActivities(JSON.parse(savedActivities));
+        }
+      } catch (error) {
+        console.error("Failed to initialize session:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    setIsLoading(false);
+    initApp();
   }, []);
 
-  // Save changes
+  // Save changes to LocalStorage
   useEffect(() => {
-    localStorage.setItem('pillarx_projects', JSON.stringify(projects));
-  }, [projects]);
+    if (!isLoading) {
+      localStorage.setItem('pillarx_projects', JSON.stringify(projects));
+    }
+  }, [projects, isLoading]);
 
   useEffect(() => {
-    localStorage.setItem('pillarx_activities', JSON.stringify(activities));
-  }, [activities]);
+    if (!isLoading) {
+      localStorage.setItem('pillarx_activities', JSON.stringify(activities));
+    }
+  }, [activities, isLoading]);
 
   const trackActivity = (type: string, detail: string) => {
     const newActivity: UserActivity = {
@@ -61,10 +81,11 @@ function App() {
   const handleAuthSuccess = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('pillarx_current_user', JSON.stringify(user));
+    trackActivity('LOGIN_SUCCESS', `User session established for ${user.email}`);
   };
 
   const handleLogout = () => {
-    trackActivity('LOGOUT', 'User signed out');
+    trackActivity('LOGOUT', 'User signed out manually');
     setCurrentUser(null);
     localStorage.removeItem('pillarx_current_user');
   };
@@ -78,13 +99,20 @@ function App() {
     const now = new Date();
     const formattedDate = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()}`;
     
+    const initialComponent: ProjectComponent = {
+      id: `c_${Date.now()}`,
+      type: componentType,
+      name: `${componentType} 1`,
+      quantity: 1
+    };
+
     const newProject: Project = {
       id: Date.now().toString(),
       name,
-      components: 1,
+      componentsCount: 1,
+      components: [initialComponent],
       dateModified: formattedDate,
       isRecent: true,
-      lastComponentType: componentType
     };
 
     setProjects([newProject, ...projects]);
@@ -104,12 +132,33 @@ function App() {
     trackActivity('DELETE_PROJECT', `Deleted project: ${project?.name || projectId}`);
   };
 
-  if (isLoading) return <div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>;
+  const handleUpdateProject = (updatedProject: Project) => {
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+    setActiveProject(updatedProject);
+    trackActivity('UPDATE_PROJECT', `Updated project structure: ${updatedProject.name}`);
+  };
 
-  if (!currentUser) return <Auth onAuthSuccess={handleAuthSuccess} />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
+        <div className="w-12 h-12 border-4 border-[#005a8d] border-t-transparent rounded-full animate-spin"></div>
+        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">PillarX Loading...</span>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />;
+  }
 
   if (activeProject) {
-    return <ProjectDetail project={activeProject} onBack={() => setActiveProject(null)} />;
+    return (
+      <ProjectDetail 
+        project={activeProject} 
+        onBack={() => setActiveProject(null)} 
+        onUpdateProject={handleUpdateProject}
+      />
+    );
   }
 
   return (

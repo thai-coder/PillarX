@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { User, LogIn, UserPlus, ShieldAlert } from 'lucide-react';
+import { User, LogIn, UserPlus, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { detectActor } from '../utils/detector';
+import { User as UserType } from '../types';
 
 interface AuthProps {
-  onAuthSuccess: (user: any) => void;
+  onAuthSuccess: (user: UserType) => void;
 }
 
 const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
@@ -15,6 +16,33 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
   const { actorType } = detectActor();
 
+  const trackActivity = (type: string, detail: string, userId?: string) => {
+    const activities = JSON.parse(localStorage.getItem('pillarx_activities') || '[]');
+    const newActivity = {
+      id: Date.now().toString(),
+      user_id: userId,
+      action_type: type,
+      action_detail: detail,
+      ip_address: '127.0.0.1',
+      user_agent: navigator.userAgent,
+      actor_type: actorType,
+      created_at: new Date().toISOString()
+    };
+    localStorage.setItem('pillarx_activities', JSON.stringify([newActivity, ...activities]));
+  };
+
+  const handleAdminQuickLogin = () => {
+    const adminUser: UserType = {
+      id: 'admin_001',
+      email: 'admin@pillarx.com',
+      full_name: 'PillarX Admin',
+      role: 'ADMIN',
+      is_bot: false
+    };
+    trackActivity('LOGIN', 'Quick login as Administrator', adminUser.id);
+    onAuthSuccess(adminUser);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -24,7 +52,6 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
       return;
     }
 
-    // Mock Backend Logic
     const users = JSON.parse(localStorage.getItem('pillarx_users') || '[]');
     
     if (isLogin) {
@@ -40,32 +67,19 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         setError('Email already exists.');
         return;
       }
-      const newUser = {
+      const newUser: UserType = {
         id: Date.now().toString(),
         email,
         password,
         full_name: fullName,
+        role: 'USER',
         is_bot: actorType === 'BOT'
-      };
+      } as any; // Cast for mock password support
+      
       localStorage.setItem('pillarx_users', JSON.stringify([...users, newUser]));
       trackActivity('REGISTER', `New user registered as ${actorType}`, newUser.id);
       onAuthSuccess(newUser);
     }
-  };
-
-  const trackActivity = (type: string, detail: string, userId?: string) => {
-    const activities = JSON.parse(localStorage.getItem('pillarx_activities') || '[]');
-    const newActivity = {
-      id: Date.now().toString(),
-      user_id: userId,
-      action_type: type,
-      action_detail: detail,
-      ip_address: '127.0.0.1', // Mock IP
-      user_agent: navigator.userAgent,
-      actor_type: actorType,
-      created_at: new Date().toISOString()
-    };
-    localStorage.setItem('pillarx_activities', JSON.stringify([newActivity, ...activities]));
   };
 
   return (
@@ -78,7 +92,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2 animate-pulse">
               <ShieldAlert className="w-4 h-4" />
               {error}
             </div>
@@ -127,11 +141,26 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             {isLogin ? 'Login' : 'Create Account'}
           </button>
 
+          <div className="flex items-center gap-4 py-2">
+            <div className="flex-1 h-px bg-gray-200"></div>
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Quick Access</span>
+            <div className="flex-1 h-px bg-gray-200"></div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleAdminQuickLogin}
+            className="w-full border-2 border-[#005a8d] text-[#005a8d] hover:bg-[#005a8d]/5 font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all"
+          >
+            <ShieldCheck className="w-5 h-5" />
+            Login as Admin
+          </button>
+
           <div className="text-center pt-2">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-[#005a8d] font-semibold hover:underline"
+              className="text-sm text-gray-500 font-semibold hover:text-[#005a8d] transition-colors"
             >
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Login'}
             </button>
@@ -141,7 +170,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         {actorType === 'BOT' && (
           <div className="bg-amber-50 px-8 py-3 border-t border-amber-100 flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-amber-600" />
-            <span className="text-xs text-amber-700 font-medium italic">Automation detected. Session flagged.</span>
+            <span className="text-xs text-amber-700 font-medium italic">Automation detected. Session flagged for review.</span>
           </div>
         )}
       </div>

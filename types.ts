@@ -4,6 +4,7 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
+  role: 'ADMIN' | 'USER';
   is_bot: boolean;
 }
 
@@ -18,13 +19,20 @@ export interface UserActivity {
   created_at: string;
 }
 
+export interface ProjectComponent {
+  id: string;
+  type: string;
+  name: string;
+  quantity: number;
+}
+
 export interface Project {
   id: string;
   name: string;
-  components: number;
+  componentsCount: number;
+  components: ProjectComponent[];
   dateModified: string;
   isRecent?: boolean;
-  lastComponentType?: string;
 }
 
 export type ViewType = 'recents' | 'all' | 'my_projects' | 'activity';
