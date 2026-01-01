@@ -1,24 +1,73 @@
-import React, { useState } from 'react';
-import { AlignJustify, Home, Folder, ChevronDown, Search, Menu } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { AlignJustify, Home, Folder, ChevronDown, ChevronUp, Search, Menu, Trash2, ArrowUpDown } from 'lucide-react';
 import { Project, ViewType } from '../types';
 
 interface ProjectTableProps {
   projects: Project[];
   onMenuClick: () => void;
   onProjectClick: (project: Project) => void;
+  onDeleteProject: (projectId: string) => void;
 }
 
-const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onProjectClick }) => {
-  const [activeView, setActiveView] = useState<ViewType>('recents');
+type SortConfig = {
+  key: keyof Project | null;
+  direction: 'asc' | 'desc';
+};
+
+const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onProjectClick, onDeleteProject }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'dateModified', direction: 'desc' });
 
-  const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
+  const handleSort = (key: keyof Project) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
-    if (activeView === 'recents') return p.isRecent;
-    return true; // For 'all' and 'my_projects' showing all for demo
-  });
+  const sortedAndFilteredProjects = useMemo(() => {
+    let result = projects.filter(p => 
+      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        const aValue = a[sortConfig.key!];
+        const bValue = b[sortConfig.key!];
+
+        if (aValue === undefined || bValue === undefined) return 0;
+
+        // Date comparison special case
+        if (sortConfig.key === 'dateModified') {
+          return sortConfig.direction === 'asc' 
+            ? new Date(aValue as string).getTime() - new Date(bValue as string).getTime()
+            : new Date(bValue as string).getTime() - new Date(aValue as string).getTime();
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [projects, searchQuery, sortConfig]);
+
+  const SortIcon = ({ columnKey }: { columnKey: keyof Project }) => {
+    if (sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-gray-300" />;
+    return sortConfig.direction === 'asc' 
+      ? <ChevronUp className="w-3 h-3 ml-1 text-blue-600" /> 
+      : <ChevronDown className="w-3 h-3 ml-1 text-blue-600" />;
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    // User requested: "before delete should show answer want to delete (yes or no) Yes go to delete"
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      onDeleteProject(projectId);
+    }
+  };
 
   return (
     <div className="flex-1 p-6 md:p-12 md:ml-64 min-h-screen bg-white transition-all duration-300">
@@ -48,80 +97,88 @@ const ProjectTable: React.FC<ProjectTableProps> = ({ projects, onMenuClick, onPr
       </div>
 
       {/* Main Content Card */}
-      <div className="border border-gray-800 rounded-lg flex flex-col md:flex-row min-h-[500px] overflow-hidden">
+      <div className="border border-gray-300 rounded-lg flex flex-col overflow-hidden shadow-sm">
         
-        {/* Card Sidebar */}
-        <div className="w-full md:w-64 bg-gray-100/50 border-b md:border-b-0 md:border-r border-gray-300 flex-shrink-0">
-          <div className="flex md:block overflow-x-auto md:overflow-visible py-2">
-            <button
-              onClick={() => setActiveView('recents')}
-              className={`flex-1 md:w-full flex items-center justify-center md:justify-start gap-3 px-4 md:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeView === 'recents' ? 'bg-gray-200/80 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <AlignJustify className="w-4 h-4" />
-              Recents
-            </button>
-            <button
-              onClick={() => setActiveView('all')}
-              className={`flex-1 md:w-full flex items-center justify-center md:justify-start gap-3 px-4 md:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeView === 'all' ? 'bg-gray-200/80 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <Home className="w-4 h-4" />
-              All Projects
-            </button>
-            <button
-              onClick={() => setActiveView('my_projects')}
-              className={`flex-1 md:w-full flex items-center justify-center md:justify-start gap-3 px-4 md:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeView === 'my_projects' ? 'bg-gray-200/80 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <Folder className="w-4 h-4" />
-              My Projects
-            </button>
-          </div>
-        </div>
-
         {/* Card Content (Table) */}
         <div className="flex-1 bg-white">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-white">
+              <thead className="bg-gray-50/50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider w-1/2 min-w-[150px]">
-                    Project Name
+                  <th 
+                    scope="col" 
+                    className="px-6 py-4 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center">
+                      Project Name
+                      <SortIcon columnKey="name" />
+                    </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 tracking-wider">
-                    Components
+                  <th 
+                    scope="col" 
+                    className="px-6 py-4 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('components')}
+                  >
+                    <div className="flex items-center justify-center">
+                      Components
+                      <SortIcon columnKey="components" />
+                    </div>
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap">
-                    Date Modified
+                  <th 
+                    scope="col" 
+                    className="px-6 py-4 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('dateModified')}
+                  >
+                    <div className="flex items-center justify-end">
+                      Date Modified
+                      <SortIcon columnKey="dateModified" />
+                    </div>
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wider w-24">
+                    Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {filteredProjects.length > 0 ? (
-                  filteredProjects.map((project) => (
+                {sortedAndFilteredProjects.length > 0 ? (
+                  sortedAndFilteredProjects.map((project) => (
                     <tr 
                       key={project.id} 
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => onProjectClick(project)}
+                      className="group hover:bg-blue-50/30 transition-colors cursor-pointer"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td 
+                        className="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-800"
+                        onClick={() => onProjectClick(project)}
+                      >
                         {project.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                      <td 
+                        className="px-6 py-5 whitespace-nowrap text-sm text-gray-600 text-center"
+                        onClick={() => onProjectClick(project)}
+                      >
                         {project.components}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      <td 
+                        className="px-6 py-5 whitespace-nowrap text-sm text-gray-600 text-right"
+                        onClick={() => onProjectClick(project)}
+                      >
                         {project.dateModified}
+                      </td>
+                      <td className="px-6 py-5 whitespace-nowrap text-center text-sm">
+                        <button 
+                          onClick={(e) => handleDeleteClick(e, project.id)}
+                          className="text-gray-300 hover:text-red-600 transition-colors p-2"
+                          title="Delete Project"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={3} className="px-6 py-12 text-center text-sm text-gray-500">
+                    <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-500">
                       No projects found.
                     </td>
                   </tr>
