@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ProjectTable from './components/ProjectTable';
 import NewProject from './components/NewProject';
-import ProjectDetail from './components/ProjectDetail';
+import ProjectDetail from './components/ProjectDetail/index'; // Updated import
 import ActivityLog from './components/ActivityLog';
 import Auth from './components/Auth';
-import { MOCK_PROJECTS } from './constants';
+import { MOCK_PROJECTS, DEFAULT_SETTINGS } from './constants';
 import { Project, User, UserActivity, ViewType, ProjectComponent } from './types';
 import { detectActor } from './utils/detector';
 
@@ -21,48 +21,38 @@ function App() {
 
   const { actorType } = detectActor();
 
-  // Unified Initialization Logic (Auto-Login)
   useEffect(() => {
     const initApp = async () => {
       try {
-        // Restore Session
         const savedUser = localStorage.getItem('pillarx_current_user');
-        if (savedUser) {
-          setCurrentUser(JSON.parse(savedUser));
-        }
+        if (savedUser) setCurrentUser(JSON.parse(savedUser));
 
-        // Restore Data
         const savedProjects = localStorage.getItem('pillarx_projects');
-        if (savedProjects) {
-          setProjects(JSON.parse(savedProjects));
-        }
+        if (savedProjects) setProjects(JSON.parse(savedProjects));
 
         const savedActivities = localStorage.getItem('pillarx_activities');
-        if (savedActivities) {
-          setActivities(JSON.parse(savedActivities));
-        }
+        if (savedActivities) setActivities(JSON.parse(savedActivities));
       } catch (error) {
         console.error("Failed to initialize session:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
     initApp();
   }, []);
 
-  // Save changes to LocalStorage
   useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('pillarx_projects', JSON.stringify(projects));
-    }
+    if (!isLoading) localStorage.setItem('pillarx_projects', JSON.stringify(projects));
   }, [projects, isLoading]);
 
   useEffect(() => {
-    if (!isLoading) {
-      localStorage.setItem('pillarx_activities', JSON.stringify(activities));
-    }
+    if (!isLoading) localStorage.setItem('pillarx_activities', JSON.stringify(activities));
   }, [activities, isLoading]);
+
+  const updateTimestamp = () => {
+    const now = new Date();
+    return `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()}`;
+  };
 
   const trackActivity = (type: string, detail: string) => {
     const newActivity: UserActivity = {
@@ -96,9 +86,6 @@ function App() {
   };
 
   const handleCreateProject = (name: string, componentType: string) => {
-    const now = new Date();
-    const formattedDate = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()}`;
-    
     const initialComponent: ProjectComponent = {
       id: `c_${Date.now()}`,
       type: componentType,
@@ -111,14 +98,15 @@ function App() {
       name,
       componentsCount: 1,
       components: [initialComponent],
-      dateModified: formattedDate,
+      settings: { ...DEFAULT_SETTINGS }, // Add default settings
+      dateModified: updateTimestamp(),
       isRecent: true,
     };
 
     setProjects([newProject, ...projects]);
     setIsNewProjectOpen(false);
     setActiveProject(newProject);
-    trackActivity('CREATE_PROJECT', `Project "${name}" created with component ${componentType}`);
+    trackActivity('CREATE_PROJECT', `Project "${name}" created`);
   };
 
   const handleProjectClick = (project: Project) => {
@@ -133,8 +121,12 @@ function App() {
   };
 
   const handleUpdateProject = (updatedProject: Project) => {
-    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
-    setActiveProject(updatedProject);
+    const projectWithFreshTimestamp = {
+      ...updatedProject,
+      dateModified: updateTimestamp()
+    };
+    setProjects(prev => prev.map(p => p.id === projectWithFreshTimestamp.id ? projectWithFreshTimestamp : p));
+    setActiveProject(projectWithFreshTimestamp);
     trackActivity('UPDATE_PROJECT', `Updated project structure: ${updatedProject.name}`);
   };
 
@@ -147,9 +139,7 @@ function App() {
     );
   }
 
-  if (!currentUser) {
-    return <Auth onAuthSuccess={handleAuthSuccess} />;
-  }
+  if (!currentUser) return <Auth onAuthSuccess={handleAuthSuccess} />;
 
   if (activeProject) {
     return (

@@ -26,11 +26,26 @@ export interface ProjectComponent {
   quantity: number;
 }
 
+export interface ProjectSettings {
+  codes: {
+    hotRolledSteel: string;
+    concreteFoundations: string;
+    seismic: string;
+    wind: string;
+  };
+  concrete: {
+    strength: string;
+    density: string;
+  };
+  units: 'Imperial' | 'Metric';
+}
+
 export interface Project {
   id: string;
   name: string;
   componentsCount: number;
   components: ProjectComponent[];
+  settings: ProjectSettings;
   dateModified: string;
   isRecent?: boolean;
 }
