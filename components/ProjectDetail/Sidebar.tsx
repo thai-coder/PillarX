@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className={`
       bg-white border-r border-gray-200 flex flex-col z-10 transition-all duration-300 ease-in-out relative
-      ${collapsed ? 'w-0 overflow-hidden opacity-0 invisible' : 'w-72 opacity-100'}
+      ${collapsed ? 'w-0 overflow-hidden opacity-0 invisible' : 'w-64 opacity-100'}
     `}>
       <div className="p-4 border-b border-gray-200 flex items-center gap-2">
         <button 

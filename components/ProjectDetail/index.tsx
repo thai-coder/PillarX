@@ -163,7 +163,7 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack, onUpdate
 
         <aside className={`
           bg-white border-l border-gray-200 flex flex-col shadow-2xl z-10 transition-all duration-300 ease-in-out overflow-hidden
-          ${rightSidebarCollapsed ? 'w-0 opacity-0 invisible' : 'w-96 opacity-100'}
+          ${rightSidebarCollapsed ? 'w-0 opacity-0 invisible' : 'w-80 opacity-100'}
         `}>
           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Component:</span>
@@ -172,11 +172,11 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack, onUpdate
             </div>
           </div>
 
-          <div className="flex border-b border-gray-200 bg-gray-50/50">
-            <button className="flex-1 py-3 text-[11px] font-bold text-blue-600 border-b-2 border-blue-600 bg-white uppercase tracking-wider">General Properties</button>
-            <button className="flex-1 py-3 text-[11px] font-bold text-gray-400 hover:text-gray-600 uppercase tracking-wider">Soil</button>
-            <button className="flex-1 py-3 text-[11px] font-bold text-gray-400 hover:text-gray-600 uppercase tracking-wider">Reinforcement</button>
-            <button className="flex-1 py-3 text-[11px] font-bold text-gray-400 hover:text-gray-600 uppercase tracking-wider">Loads</button>
+          <div className="flex border-b border-gray-200 bg-gray-50/50 overflow-x-auto whitespace-nowrap custom-scrollbar">
+            <button className="flex-shrink-0 px-4 py-3 text-[11px] font-bold text-blue-600 border-b-2 border-blue-600 bg-white uppercase tracking-wider">General Properties</button>
+            <button className="flex-shrink-0 px-4 py-3 text-[11px] font-bold text-gray-400 hover:text-gray-600 uppercase tracking-wider">Soil</button>
+            <button className="flex-shrink-0 px-4 py-3 text-[11px] font-bold text-gray-400 hover:text-gray-600 uppercase tracking-wider">Reinforcement</button>
+            <button className="flex-shrink-0 px-4 py-3 text-[11px] font-bold text-gray-400 hover:text-gray-600 uppercase tracking-wider">Loads</button>
           </div>
 
           <div className="flex px-6 pt-5 pb-2 gap-6">
@@ -209,10 +209,12 @@ const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack, onUpdate
       )}
 
       <style dangerouslySetInnerHTML={{ __html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
     </div>
   );
