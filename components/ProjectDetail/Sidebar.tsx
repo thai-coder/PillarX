@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Plus, ChevronDown, Copy, Trash2 } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Plus, ChevronDown, Copy, Trash2, Check } from 'lucide-react';
 import { ProjectComponent } from '../../types';
 
 interface SidebarProps {
@@ -29,9 +29,22 @@ const Sidebar: React.FC<SidebarProps> = ({
   onDelete,
   onRename
 }) => {
-  const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [editingName, setEditingName] = React.useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const startRenaming = (e: React.MouseEvent, comp: ProjectComponent) => {
     e.stopPropagation();
@@ -47,6 +60,18 @@ const Sidebar: React.FC<SidebarProps> = ({
     setEditingId(null);
   };
 
+  const filterOptions = [
+    'ALL',
+    'Beam',
+    'Column',
+    'Steel Joist',
+    'Composite Beam',
+    'Retaining Wall',
+    'Spread Footing',
+    'Wall Footing',
+    'Drilled Pier'
+  ];
+
   return (
     <aside className={`
       bg-white border-r border-gray-200 flex flex-col z-10 transition-all duration-300 ease-in-out relative
@@ -60,21 +85,45 @@ const Sidebar: React.FC<SidebarProps> = ({
           <Plus className="w-4 h-4" /> Add Component
         </button>
       </div>
-      <div className="p-2 bg-gray-50/80 border-b border-gray-200 flex justify-between items-center px-4">
+      
+      <div className="p-2 bg-gray-50/80 border-b border-gray-200 flex justify-between items-center px-4 relative h-10">
         <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">List:</span>
-        <div className="relative group">
-          <select 
-            value={filterType}
-            onChange={(e) => onFilterChange(e.target.value)}
-            className="text-[11px] font-bold text-gray-900 bg-transparent border-none focus:ring-0 cursor-pointer appearance-none pr-5 uppercase"
+        
+        <div className="flex-1 flex justify-end" ref={dropdownRef}>
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-1 text-[11px] font-bold text-gray-900 bg-transparent border-none focus:outline-none cursor-pointer uppercase py-1"
           >
-            {componentTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-          <ChevronDown className="w-3 h-3 text-gray-400 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+            {filterType}
+            <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isDropdownOpen && (
+            <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 rounded-b-lg">
+              <div className="max-h-[300px] overflow-y-auto custom-dropdown-scrollbar">
+                {filterOptions.map((option) => (
+                  <div 
+                    key={option}
+                    onClick={() => {
+                      onFilterChange(option);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between ${
+                      filterType === option 
+                        ? 'bg-blue-50 text-blue-700 font-semibold' 
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>{option}</span>
+                    {filterType === option && <Check className="w-3.5 h-3.5" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
       <div className="flex-1 overflow-y-auto custom-scrollbar">
          {components.map((comp) => (
            <div 
@@ -109,12 +158,28 @@ const Sidebar: React.FC<SidebarProps> = ({
                 )}
              </div>
              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={(e) => onDuplicate(e, comp)} className="p-1 hover:text-blue-600"><Copy className="w-3.5 h-3.5" /></button>
-                <button onClick={(e) => onDelete(e, comp.id)} className="p-1 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                <button onClick={(e) => onDuplicate(e, comp)} className="p-1 hover:text-blue-600" title="Duplicate"><Copy className="w-3.5 h-3.5" /></button>
+                <button onClick={(e) => onDelete(e, comp.id)} className="p-1 hover:text-red-600" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
              </div>
            </div>
          ))}
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-dropdown-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-dropdown-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+        .custom-dropdown-scrollbar::-webkit-scrollbar-thumb {
+          background: #64748b;
+          border-radius: 0px;
+        }
+        .custom-dropdown-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #475569;
+        }
+      `}} />
     </aside>
   );
 };
